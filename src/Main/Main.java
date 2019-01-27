@@ -7,7 +7,7 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class Main extends Application{
+public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -16,7 +16,6 @@ public class Main extends Application{
         View view = new View();
 
         controller.link(model, view);
-
         Scene sceneStart = new Scene(view, 728, 728 / 16 * 9);
 
         stage.setScene(sceneStart);

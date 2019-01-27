@@ -6,81 +6,70 @@ import com.restfb.Version;
 import com.restfb.scope.FacebookPermissions;
 import com.restfb.scope.ScopeBuilder;
 import com.restfb.types.User;
-import org.apache.commons.exec.util.StringUtils;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 public class Controller {
     private Model model;
-    private String accessToken;
+    private WebDriver driver;
+    private FacebookClient client;
 
     public void link(Model model, View view) {
         this.model = model;
         view.addController(this);
     }
 
-    public void btnLoginClick() {
-
-        String domain = "https://www.google.de/";
-        String appID = "312285962731033";
-        String appSecret = "6fa94a7c147d9ef930b0ae5b0381696f";
-        String stateParam = "st=state123abc,ds=123456789";
-
+    protected void btnLoginClick() {
         System.setProperty("webdriver.chrome.driver", "/Applications/chromedriver");
-        WebDriver driver = new ChromeDriver();
-
-        FacebookClient client = new DefaultFacebookClient(Version.LATEST);
+        driver = new ChromeDriver();
+        client = new DefaultFacebookClient(Version.LATEST);
 
         //scope - permission
         ScopeBuilder scopeBuilder = new ScopeBuilder();
         scopeBuilder.addPermission(FacebookPermissions.EMAIL);
 
         //get facebook login dialog url
-        String loginDialogUrlString = client.getLoginDialogUrl(appID, domain, scopeBuilder);
+        String loginDialogUrlString = client.getLoginDialogUrl(model.getAppId(), model.getREDIRECT_URL(), scopeBuilder);
 
 
         //start webdriver with login dialog url
         driver.get(loginDialogUrlString);
 
-//        FacebookClient.AccessToken accessToken = client.obtainAppAccessToken(appID, appSecret);
-//        String token = accessToken.getAccessToken();
-//        String[] segmentsToken = StringUtils.split(token, "|");
-//
-//
-//        for (String s : segmentsToken) {
-//            System.out.println(s);
-//        }
+        //get user-code for getting Accesstoken
+        String userCode = getUsercodeForAccessToken(driver);
 
-//        System.out.println(segmentsToken[1]);
-//        client = new DefaultFacebookClient(segmentsToken[1], Version.VERSION_3_2);
-//        User me = client.fetchObject("me", User.class);
-//        System.out.println(me.getEmail());
-        String result = null;
+        //get user-AccessToken with user-code and save in Model
+        FacebookClient.AccessToken usrAccessToken = client.obtainUserAccessToken(model.getAppId(), model.getAppSecret(), model.getREDIRECT_URL(), userCode);
+        System.out.println("Token: " + usrAccessToken.getAccessToken());
+        model.setAccessToken(usrAccessToken.getAccessToken());
+
+
+        //Test if everything is working with printing user
+        client = new DefaultFacebookClient(model.getAccessToken(), Version.VERSION_3_2);
+        User user = client.fetchObject("me", User.class);
+        System.out.println(user);
+    }
+
+
+    //get Usercode for getting the access-tokn
+    private String getUsercodeForAccessToken(WebDriver driver) {
+        String result;
+
         while (true) {
             if (!driver.getCurrentUrl().contains("facebook.com")) {
 
-                String sdsd = driver.getCurrentUrl();
+                String url = driver.getCurrentUrl();
 
-                result = sdsd.substring(sdsd.indexOf("=") + 1, sdsd.indexOf("#"));
+                result = url.substring(url.indexOf("=") + 1, url.indexOf("#"));
 
-                System.out.println("Result: "+ result);
+                System.out.println("Result: " + result);
 
                 driver.close();
                 break;
 
-
             }
-
         }
-
-        FacebookClient.AccessToken at = client.obtainUserAccessToken(appID, appSecret, domain, result);
-        System.out.println("Token: " + at.getAccessToken());
-
-        model.setAccessToken(at.getAccessToken());
-        client = new DefaultFacebookClient(model.getAccessToken(), Version.VERSION_3_2);
-        User user = client.fetchObject("me", User.class);
-
-        System.out.println(user);
+        return result;
     }
 }
 

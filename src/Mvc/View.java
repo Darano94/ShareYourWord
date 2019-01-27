@@ -10,7 +10,8 @@ public class View extends BorderPane {
     public void addController(Controller controller) {
         this.controller = controller;
     }
-    public View(){
+
+    public View() {
         btnLogin = new Button("Login");
         btnLogin.setOnAction(e -> controller.btnLoginClick());
 
